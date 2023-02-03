@@ -1,0 +1,162 @@
+
+<fieldset class="layui-elem-field layui-field-title">
+  <legend>预订列表</legend>
+</fieldset>
+
+<form class="layui-form layui-form-pane">
+	<!-- 根据电话查询 -->
+	<div class="layui-form-item">
+		<label class="layui-form-label">姓名</label>
+		<div class="layui-input-inline">
+			<input type="text" name="name" class="layui-input" placeholder="请输入顾客姓名">
+		</div>
+		<label class="layui-form-label">电话</label>
+		<div class="layui-input-inline">
+			<input type="text" name="phone" class="layui-input" placeholder="请输入顾客电话">
+		</div>
+		<div class="layui-input-inline">
+			<button class="layui-btn" lay-submit lay-filter="order-search">
+				<i class="layui-icon layui-icon-search"></i>
+			</button>
+		</div>
+	</div>
+</form>
+
+<table id="order-list" lay-filter="order-list"></table>
+
+<!-- 操作按钮 -->
+<script type="text/html" id="order-bar">
+{{# if (d.status==0) { }}
+	<a class="layui-btn layui-btn-sm layui-btn-normal" lay-event="checkin">入住</a>
+	<a class="layui-btn layui-btn-sm layui-btn-danger" lay-event="cancel">取消预订</a>
+{{# } }}
+{{# if (d.status==2) { }}
+	<a class="layui-btn layui-btn-sm" lay-event="checkout">退房</a>
+{{# } }}
+</script>
+
+
+<script>
+
+layui.use(['table','form'],function(){
+	var table = layui.table,
+	form = layui.form;
+	
+	//渲染表格数据
+	table.render({
+		elem: '#order-list',
+		url: '/api/order/getAll',
+		page: true,
+		cols: [[
+			{title: 'ID', field: 'id'},
+			{title: '开始时间', field: 'start'},
+			{title: '结束时间', field: 'end'},
+			{title: '入住时间', field: 'inTime'},
+			{title: '退房时间', field: 'out'},
+			{title: '押金', field: 'deposit'},
+			{title: '房费', field: 'cost'},
+			{title: '房间', field: 'roomId', templet: function(d){
+				return d.room.number;
+			}},
+			{title: '用户', field: 'userId', templet: function(d){
+				return d.user.name;
+			}},
+			{title: '预订电话', field: 'user', templet: function(d){
+				return d.user.phone;
+			}},
+			{title: '状态', field: 'status', templet: function(d){
+				return ['预订', '取消', '入住', '完成'][d.status];
+			}},
+			{title: '操作', toolbar: '#order-bar', width: 180},
+		]],
+		parseData: function(res){
+			return {
+				code: res.code,
+				msg: res.msg,
+				count: res.data.total,
+				data: res.data.list,
+			};
+		}
+	});
+	
+	//表单提交
+	form.on('submit(order-search)',function(data){
+		//刷新表格
+		table.reload('order-list',{
+			where: data.field,
+			page: { cur: 1},
+		});
+		
+		return false;
+	});
+	
+	// 绑定表格的行工具条事件
+	table.on('tool(order-list)',function(obj){
+		if (obj.event == 'cancel'){
+			layer.confirm('确定要取消当前预定信息吗？', function(index){
+				layer.close(index);
+				
+				$.ajax({
+					url: '/api/order/edit',
+					data: {id: obj.data.id, status: 1},
+					type: 'post',
+					dataType: 'json',
+					success: function(result){
+						if (result.code > 0){
+							layer.msg('取消预订成功');
+						} else {
+							layer.msg(result.msg);
+						}
+						
+						//刷新表格
+						table.reload('order-list');
+					},
+					error: function(){
+						layer.msg('请求失败');
+					}
+				});
+			});
+		} else if (obj.event == 'checkin'){
+			//传递数据
+			sessionStorage.setItem('order',JSON.stringify(obj.data));
+			//入住
+			layer.open({
+				type: 2,	//iframe
+				title: '办理入住',
+				content: '/order/checkin.html',
+				area: ['1000px', '600px'],
+				end: function(){
+					//刷新表格
+					table.reload('order-list');
+					
+				}
+			});
+			
+		} else if (obj.event == 'checkout'){
+			//传递数据
+			//sessionStorage.setItem('order',JSON.stringify(obj.data));
+			//退房
+			layer.confirm('确认退房',function(index){
+				$.ajax({
+					url: '/api/order/checkout',
+					data: {id: obj.data.id},	// 订单的ID
+					type: 'post',
+					dataType: 'json',
+					success: function(result){
+						if (result.code > 0){
+							layer.msg('退房成功');
+							table.reload('order-list');
+						} else {
+							layer.msg(result.msg);
+						}
+					},
+					error: function(){
+						layer.msg('请求失败');
+					}
+				});
+			});
+		}
+	});
+});
+
+</script>

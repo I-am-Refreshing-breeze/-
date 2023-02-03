@@ -1,0 +1,24 @@
+## 端口
+server:  port: 8080
+  
+##数据配置
+spring:  datasource:    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/hotel?serverTimezone=GMT%2b8&useUnicode=true&characterEncoding=utf8
+     ## 数据库的账号
+    username: root
+    ## 数据库的密码 ## 注意, 此处的密码是你自己的数据库的密码.
+    password: 123456
+    
+## 文件上传，大小限制 10MB  servlet:    multipart:      max-request-size: 10MB
+      max-file-size: 10MB
+        ## 图片保存路径
+upload:
+  path: D:\hotel\  
+    
+## mybatis
+mybatis:  configuration:
+    ## 开启驼峰命名法    map-underscore-to-camel-case: true
+    ## 开启SQL打印
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    
+

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>思图-酒店预订系统</title>
+  <link rel="stylesheet" href="/layui/css/layui.css">
+</head>
+<body>
+<div class="layui-layout layui-layout-admin">
+  <div class="layui-header">
+    <div class="layui-logo layui-hide-xs layui-bg-black">思图-酒店预订系统</div>
+    <!-- 头部区域（可配合layui 已有的水平导航） -->
+    <ul class="layui-nav layui-layout-left">
+      <!-- 移动端显示 -->
+      <li class="layui-nav-item layui-show-xs-inline-block layui-hide-sm" lay-header-event="menuLeft">
+        <i class="layui-icon layui-icon-spread-left"></i>
+      </li>
+      
+      <li class="layui-nav-item layui-hide-xs layui-this">
+      <a href="javascript:;" data-url="/user/order.html">预订房间</a></li>
+      <li class="layui-nav-item layui-hide-xs">
+      <a href="javascript:;" data-url="/user/myorder.html">我的预订</a></li>
+      <li class="layui-nav-item layui-hide-xs">
+      <a href="javascript:;" data-url="/user/center.html">修改信息</a></li>
+
+    </ul>
+    <ul class="layui-nav layui-layout-right">
+      <li class="layui-nav-item layui-hide layui-show-md-inline-block">
+        <a href="javascript:;">
+          <img src="//tva1.sinaimg.cn/crop.0.0.118.118.180/5db11ff4gw1e77d3nqrv8j203b03cweg.jpg" class="layui-nav-img">
+          <span id="login-user">tester</span>
+        </a>
+        <dl class="layui-nav-child">
+          <dd><a href="" id="logout">退出</a></dd>
+        </dl>
+      </li>
+      <li class="layui-nav-item" lay-header-event="menuRight" lay-unselect>
+        <a href="javascript:;">
+          <i class="layui-icon layui-icon-more-vertical"></i>
+        </a>
+      </li>
+    </ul>
+  </div>
+  
+  
+  
+  <div class="layui-body" style="left:0px;">
+    <!-- 内容主体区域 -->
+    <div style="padding: 15px;">内容主体区域。记得修改 layui.css 和 js 的路径</div>
+  </div>
+  
+  <div class="layui-footer" style="left:0px;">
+    <!-- 底部固定区域 -->
+    底部固定区域
+  </div>
+</div>
+<script src="/layui/layui.js"></script>
+<script>
+//JS 
+layui.use(['element', 'layer', 'util'], function(){
+  var element = layui.element
+  ,layer = layui.layer
+  ,util = layui.util;
+  $ = layui.$;
+  
+  // 导航菜单的点击事件
+  $('.layui-layout-left a').click(function(){
+	  
+	  var url = $(this).attr('data-url');
+	  
+	  open(url);
+  });
+  
+  /* 定义一个打开页面的方法 */
+  open = function(url){
+	  if (url){
+		  $('.layui-body>div').load(url);
+	  } else {
+		  layer.msg("无效的URL");
+	  }
+	  
+  }
+  // 默认打开预定页面
+  open('/user/order.html');
+  
+  /* 获取当前登录的用户信息 */
+  $.ajax({
+	  url: '/api/user/loginUser',	//获取当前登录的用户信息
+	  type: 'get',
+	  dataType: 'json',
+	  success: function(result){
+		  // 登录成功
+		  if (result.code > 0) {
+			  //用户信息由result.data保存用户的信息
+			  $('#login-user').text(result.data.name);
+		  } else {
+			  // 跳转页面到登陆页面
+			  window.location.href="/user/login.html";
+		  }
+	  },
+	  error: function(){
+		  layer.msg('请求失败');
+	  }
+  });
+  
+  //用户退出的点击事件
+  $("#logout").click(function(){
+	  $.ajax({
+		  url: '/api/user/logout',
+		  type: 'get',
+		  dataType: 'json',
+		  success: function(result){
+			  // 跳转到登陆页面
+			  window.location.href="/user/login.html";
+		  },
+		  error: function(){
+			  layer.msg("请求失败");
+		  }
+	  });
+  });
+  
+  //头部事件
+  util.event('lay-header-event', {
+    //左侧菜单事件
+    menuLeft: function(othis){
+      layer.msg('展开左侧菜单的操作', {icon: 0});
+    }
+    ,menuRight: function(){
+      layer.open({
+        type: 1
+        ,content: '<div style="padding: 15px;">处理右侧面板的操作</div>'
+        ,area: ['260px', '100%']
+        ,offset: 'rt' //右上角
+        ,anim: 5
+        ,shadeClose: true
+      });
+    }
+  });
+  
+});
+</script>
+</body>
+</html>

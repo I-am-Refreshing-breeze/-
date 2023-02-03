@@ -1,0 +1,161 @@
+
+<fieldset class="layui-elem-field layui-field-title">
+  <legend>添加客房</legend>
+</fieldset>
+
+<!-- 需要一个表单 -->
+<form class="layui-form">
+
+	<div class="layui-form-item">
+		<label class="layui-form-label">照片</label>
+		<div class="layui-input-block">
+			<!-- 文件上传空间 -->
+			<div class="layui-upload">
+				<button type="button" class="layui-btn" id="test1">上传图片</button>
+				<div class="layui-upload-list">
+					<img class="layui-upload-img" id="demo1" style="width:92px; height:92px; border:0 solid #AAA">
+					<p id="demoText"></p>
+				</div>
+				<div style="width: 95px;">
+					<div class="layui-progress layui-progress-big"
+						lay-showpercent="yes" lay-filter="demo">
+						<div class="layui-progress-bar" lay-percent=""></div>
+					</div>
+				</div>
+			</div>
+
+			<a name="list-progress"> </a>
+		</div>
+	</div>
+	
+	<div class="layui-form-item">
+		<label class="layui-form-label">房间号</label>
+		<div class="layui-input-inline">
+			<input type="text" name="number" placeholder="请输入房间号"
+			 class="layui-input" required lay-verify="required">
+		</div>
+	</div>
+	
+	<div class="layui-form-item">
+		<label class="layui-form-label">类型</label>
+		<div class="layui-input-block">
+			<input type="radio" name="type" value="0" title="大床房">
+			<input type="radio" name="type" value="1" title="标准间">
+			<input type="radio" name="type" value="2" title="三人间">
+		</div>
+	</div>
+	
+	<div class="layui-form-item">
+		<label class="layui-form-label">描述</label>
+		<div class="layui-input-inline">
+			<input type="text" name="dscp" placeholder="请输入房间描述"
+			 class="layui-input" >
+		</div>
+	</div>
+	
+	<div class="layui-form-item">
+		<label class="layui-form-label">单价</label>
+		<div class="layui-input-inline">
+			<input type="number" name="price" placeholder="请输入房间单价"
+			 class="layui-input" required lay-verify="required" value="288">
+		</div>
+	</div>
+	
+	<div class="layui-form-item">
+		<div class="layui-input-block">
+			<input type="hidden" name="pic">
+			<button type="submit" class="layui-btn" lay-submit lay-filter="add-room">立即添加</button>
+		</div>
+	</div>
+	
+</form>
+
+<script>
+/* 渲染layui的表单 */
+layui.use(['form','upload','element','layer'],function(){
+	var form = layui.form,
+	upload = layui.upload,
+	element = layui.element,
+	layer = layui.layer;
+	
+	/* 初始化图片上传的控件 */
+		 //常规使用 - 普通图片上传
+	  var uploadInst = upload.render({
+	    elem: '#test1'
+	    ,url: '/upload' //此处用的是第三方的 http 请求演示，实际使用时改成您自己的上传接口即可。
+	    ,before: function(obj){
+	      //预读本地文件示例，不支持ie8
+	      obj.preview(function(index, file, result){
+	        $('#demo1').attr('src', result); //图片链接（base64）
+	      });
+	      
+	      element.progress('demo', '0%'); //进度条复位
+	      layer.msg('上传中', {icon: 16, time: 0});
+	    }
+	    ,done: function(res){
+	      //如果上传失败
+	      if(res.code > 0){
+	        return layer.msg('上传失败');
+	      }
+	      //上传成功的一些操作	写好接口之后再说
+	      //将上传图片的名字，保存到input中
+	      $("input[name='pic']").val(res.data);
+	      //……
+	      $('#demoText').html(''); //置空上传失败的状态
+	    }
+	    ,error: function(){
+	      //演示失败状态，并实现重传
+	      var demoText = $('#demoText');
+	      demoText.html('<span style="color: #FF5722;">上传失败</span> <a class="layui-btn layui-btn-xs demo-reload">重试</a>');
+	      demoText.find('.demo-reload').on('click', function(){
+	        uploadInst.upload();
+	      });
+	    }
+	    //进度条
+	    ,progress: function(n, elem, e){
+	      element.progress('demo', n + '%'); //可配合 layui 进度条元素使用
+	      if(n == 100){
+	        layer.msg('上传完毕', {icon: 1});
+	      }
+	    }
+	  });
+		
+	
+	//渲染
+	form.render();
+	
+	/* 表单提交  */
+	form.on('submit(add-room)',function(data){
+		// 点击lay-filter = add-room的按钮时，这里响应
+		
+		// 使用ajax 异步请求  后端接口/api/room/add
+		$.ajax({
+			url: '/api/room/add',  //请求的地址
+			data: data.field,  //向服务器提交的参数,表单中填写的数据都放到了data.field
+			type: 'post',      // HTTP请求的方式，要与接口的请求方式保持一致
+			dataType: 'json',  // 接口返回的数据类型,
+			success: function(result){    //请求成功时的回调,result时服务器返回来的JSON格式的数据
+				if (result.code > 0){
+					//成功
+					layer.confirm("房间添加成功，是否继续添加房间", function(index){
+						layer.close(index);
+					},function(index){
+						layer.close(index);
+						//跳转到列表页面
+						open('/room/list.html');
+					});
+				} else {
+					layer.msg(result.msg);
+				}
+			},
+			error: function(){     //请求失败时的回调
+				layer.msg('请求失败');
+			}
+		});
+		
+		return false;   // 组织表单的自动提交
+	});
+	
+	
+});
+</script>

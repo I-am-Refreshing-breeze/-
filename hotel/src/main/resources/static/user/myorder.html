@@ -1,0 +1,90 @@
+
+<fieldset class="layui-elem-field layui-field-title">
+  <legend>我的预订</legend>
+</fieldset>
+
+<table id="order-list" lay-filter="order-list"></table>
+
+<!-- 操作按钮 -->
+<script type="text/html" id="order-bar">
+{{# if (d.status==0) { }}
+	<a class="layui-btn layui-btn-sm layui-btn-danger" lay-event="cancel">取消预订</a>
+{{# } }}
+</script>
+
+
+<script>
+
+layui.use(['table','form'],function(){
+	var table = layui.table,
+	form = layui.form;
+	
+	//渲染表格数据
+	table.render({
+		elem: '#order-list',
+		url: '/api/order/user/getAll',
+		page: true,
+		cols: [[
+			{title: 'ID', field: 'id'},
+			{title: '开始时间', field: 'start'},
+			{title: '结束时间', field: 'end'},
+			{title: '入住时间', field: 'inTime'},
+			{title: '退房时间', field: 'out'},
+			{title: '押金', field: 'deposit'},
+			{title: '房费', field: 'cost'},
+			{title: '房间', field: 'roomId', templet: function(d){
+				return d.room.number;
+			}},
+			{title: '用户', field: 'userId', templet: function(d){
+				return d.user.name;
+			}},
+			{title: '预订电话', field: 'user', templet: function(d){
+				return d.user.phone;
+			}},
+			{title: '状态', field: 'status', templet: function(d){
+				return ['预订', '取消', '入住', '完成'][d.status];
+			}},
+			{title: '操作', toolbar: '#order-bar', width: 180},
+		]],
+		parseData: function(res){
+			return {
+				code: res.code,
+				msg: res.msg,
+				count: res.data.total,
+				data: res.data.list,
+			};
+		}
+	});
+	
+	
+	// 绑定表格的行工具条事件
+	table.on('tool(order-list)',function(obj){
+		if (obj.event == 'cancel'){
+			layer.confirm('确定要取消当前预定信息吗？', function(index){
+				layer.close(index);
+				
+				$.ajax({
+					url: '/api/order/user/edit',
+					data: {id: obj.data.id, status: 1},
+					type: 'post',
+					dataType: 'json',
+					success: function(result){
+						if (result.code > 0){
+							layer.msg('取消预订成功');
+						} else {
+							layer.msg(result.msg);
+						}
+						
+						//刷新表格
+						table.reload('order-list');
+					},
+					error: function(){
+						layer.msg('请求失败');
+					}
+				});
+			});
+		}
+	});
+});
+
+</script>

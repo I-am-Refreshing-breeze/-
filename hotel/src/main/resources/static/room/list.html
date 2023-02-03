@@ -1,0 +1,107 @@
+
+<style>
+	.layui-table-cell{
+		height: auto;
+	}
+</style>
+
+<fieldset class="layui-elem-field layui-field-title">
+  <legend>客房列表</legend>
+</fieldset>
+
+<!-- 创建一个表格 -->
+<table id="room-list" lay-filter="room-list"></table>
+
+<!-- 操作按钮 -->
+<script type="text/html" id="room-bar">
+<a href="javascript:;" class="layui-btn layui-btn-sm layui-btn-danger" lay-event="del">删除</a>
+<a href="javascript:;" class="layui-btn layui-btn-sm layui-btn-normal" lay-event="edit">编辑</a>
+</script>
+
+<!-- 图片的展示 -->
+<script type="text/html" id="img">
+	{{# if(d.pic!=null){ }}
+	<img src="/upload/{{d.pic}}">
+	{{# } }}
+</script>
+
+<script>
+/* 渲染表格数据 */
+layui.use(['table'],function(){
+	var table = layui.table;
+	
+	//渲染
+	table.render({
+		elem: '#room-list',		//要渲染的表格元素
+		url: '/api/room/search',				//数据的来源
+		page: true,				//开启表格的分页
+		cols: [ [ 				//渲染表格中的每一个列 
+			{title: 'ID', field: 'id'},
+			{title: '房间号', field: 'number'},
+			{title: '图片', field: 'pic', templet: '#img'},
+			{title: '类型', field: 'type',templet: function(d){	// d就是当前这一行的数据
+				// 当d.type=0时，返回大床房，d.type=1时，返回标准间，d.type=2时，返回三人间
+				return ['大床房','标准间','三人间'][d.type];
+			}},
+			{title: '描述', field: 'dscp'},
+			{title: '价格', field: 'price'},
+			{title: '状态', field: 'status',templet: function(d){
+				return ['正常','删除'][d.status];
+			}},
+			{title: '操作', toolbar: '#room-bar'},
+		] ],
+		parseData: function(res){	//数据格式的转换
+			return {code: res.code,
+					msg: res.msg,
+					count: res.data.total,	//总的记录数,生成页码
+					data: res.data.list,	//当前页面要显示的记录
+		};
+		},
+	});
+	
+	//绑定操作按钮的事件
+	table.on('tool(room-list)',function(obj){
+		if(obj.event == 'del'){
+			layer.confirm("确定要删除当前一条信息吗？？？",function(index){
+				layer.close(index);
+				
+				//ajax调用删除
+				$.ajax({
+					url: '/api/room/remove',
+					data: {id: obj.data.id},
+					dataType: 'json',
+					success: function(result){
+						if (result.code > 0){
+							layer.msg('删除成功');
+						} else {
+							layer.msg(result.msg);
+						}
+						
+						//刷新表格
+						table.reload("room-list");
+					},
+					error: function(){
+						layer.msg('请求失败');
+					}
+				});
+			});
+		} else if (obj.event == 'edit'){
+			//	obj.data,将当前要修改的信息，保存到sessionStorage中
+			sessionStorage.setItem('room',JSON.stringify(obj.data));
+			
+			// 弹出一个窗口
+			layer.open({
+				type: 2,		//弹出一个iframe层
+				title: '编辑房间',//标题
+				area: ['500px','400px'],		//宽高
+				content: '/room/edit.html',	//	页面
+				end: function(){
+					//弹出层已关闭
+					//刷新表格
+					table.reload("room-list");
+				}
+			});
+		}
+	});
+});
+</script>
